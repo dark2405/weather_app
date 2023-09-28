@@ -5,9 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weather App</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
 <div class="card">
+  <div class="unit-geolocation-container">
+    <div class="unit">
+      <label for="unit-select">Select Unit: </label>
+      <select id="unit-select">
+          <option value="metric">Celsius</option>
+          <option value="imperial">Fahrenheit</option>
+      </select>
+    </div>
+    <div class="geolocation">
+      <button id="geo-button">Use My Location</button>
+    </div>
+  </div>
     <div class="search">
         <input type="text" placeholder="Enter City Name" spellcheck="false">
         <button><img src="images/search.png"></button>
@@ -37,51 +50,79 @@
         </div>
     </div>
 </div> 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-const apiKey="e8682b642ff52c4be63b7277a06208aa";
-const apiUrl="https://api.openweathermap.org/data/2.5/weather?units=metric&q="; 
-const searchBox = document.querySelector(".search input");
-const searchBtn = document.querySelector(".search button");
-const weatherIcon = document.querySelector(".weather-icon");
-async function checkWeather(city){
-    const response = await fetch(apiUrl + city + `&appid=${apiKey}`);
-    if(response.status==404){
-        document.querySelector(".error").style.display = "block";
-        document.querySelector(".weather").style.display = "none";
-    }
-    else{
-        var data = await response.json();
-    
-    document.querySelector(".city").innerHTML = data.name;
-    document.querySelector(".temp").innerHTML = Math.round(data.main.temp) + "°c";
-    document.querySelector(".humidity").innerHTML = data.main.humidity + "%";
-    document.querySelector(".wind").innerHTML = data.wind.speed + " km/h";
-    if(data.weather[0].main=="Clouds"){
-          weatherIcon.src="images/clouds.png";
-    }
-    else if(data.weather[0].main=="Clear"){
-          weatherIcon.src="images/clear.png";
-    }
-    else if(data.weather[0].main=="Rain"){
-          weatherIcon.src="images/rain.png";
-    }
-    else if(data.weather[0].main=="Drizzle"){
-          weatherIcon.src="images/drizzle.png";
-    }
-    else if(data.weather[0].main=="Mist"){
-          weatherIcon.src="images/mist.png";
-    }
-    else if(data.weather[0].main=="Snow"){
-          weatherIcon.src="images/snow.png";
-    }
-    document.querySelector(".weather").style.display = "block";
-    document.querySelector(".error").style.display = "none";
-    }
-    
+const apiKey = "e8682b642ff52c4be63b7277a06208aa";
+const apiUrl = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
+
+$(document).ready(function () {
+  const searchBox = $(".search input");
+  const searchBtn = $(".search button");
+  const weatherIcon = $(".weather-icon");
+  const unitSelect = $("#unit-select");
+  const geoButton = $("#geo-button");
+  function checkWeather(city, unit) {
+  $.ajax({
+    url: apiUrl + city + `&appid=${apiKey}&units=${unit}`, 
+    type: "GET",
+    success: function (data) {
+      $(".city").html(data.name);
+      
+      // Adjust the temperature based on the selected unit
+      if (unit === 'metric') {
+        $(".temp").html(Math.round(data.main.temp) + "°C");
+      } else if (unit === 'imperial') {
+        $(".temp").html(Math.round((data.main.temp*9/5)+32) + "°F");
+      }
+
+      $(".humidity").html(data.main.humidity + "%");
+      $(".wind").html(data.wind.speed + " km/h");
+
+      if (data.weather[0].main == "Clouds") {
+        weatherIcon.attr("src", "images/clouds.png");
+      } else if (data.weather[0].main == "Clear") {
+        weatherIcon.attr("src", "images/clear.png");
+      } else if (data.weather[0].main == "Rain") {
+        weatherIcon.attr("src", "images/rain.png");
+      } else if (data.weather[0].main == "Drizzle") {
+        weatherIcon.attr("src", "images/drizzle.png");
+      } else if (data.weather[0].main == "Mist") {
+        weatherIcon.attr("src", "images/mist.png");
+      } else if (data.weather[0].main == "Snow") {
+        weatherIcon.attr("src", "images/snow.png");
+      }
+
+      $(".weather").css("display", "block");
+      $(".error").css("display", "none");
+    },
+    error: function () {
+      $(".error").css("display", "block");
+      $(".weather").css("display", "none");
+    },
+  });
 }
-searchBtn.addEventListener("click", ()=>{
-    checkWeather(searchBox.value);
-})
-</script>   
+  // Event listener for search button
+  searchBtn.on("click", function () {
+    const selectedUnit = unitSelect.val();
+    checkWeather(searchBox.val(), selectedUnit);
+  });
+
+  // Event listener for geolocation button
+  geoButton.on("click", function () {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const selectedUnit = unitSelect.val();
+        checkWeather(`lat=${lat}&lon=${lon}`, selectedUnit);
+      }, function (error) {
+        console.error(error);
+      });
+    } else {
+      console.error("Geolocation is not supported in your browser.");
+    }
+  });
+});
+</script>
 </body>
 </html>
